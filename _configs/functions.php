@@ -4,6 +4,8 @@
 
     // $conn = new mysqli(HOST, USER, PASS, DB);
 
+use function PHPSTORM_META\map;
+
     $routes = [];
 
     function checkContentType(){
@@ -117,11 +119,12 @@
         return jwtEncode($data, JWT_SECRET, JWT_ALGO);
     }
 
-    function get_requiredFields($payload, $list = []){
+    function get_requiredFields($payload, $list = [], $return = 1){
         $returnObject = [];
         foreach ($list as $key => $value) {
             if(isset($payload[$value])){
                 $returnObject[$value] = $payload[$value];
+                if($return != 1) $GLOBALS['localData'][$value] = $payload[$value];
             }
             else {
                 retResponse(400, "$value is required field", [
@@ -135,22 +138,23 @@
         return $returnObject;
     }
 
-    function get_optionalFields($payload, $list = []){
+    function get_optionalFields($payload, $list = [], $return = 1){
         $returnObject = [];
         foreach ($list as $key => $value) {
             if(isset($payload[$value])){
                 $returnObject[$value] = $payload[$value];
+                if($return != 1) $GLOBALS['localData'][$value] = $payload[$value];
             }
         }
         return $returnObject;
     }
 
-    function mailToUser($subject, $email, $body){
+    function mailToUser($subject, $email, $name, $body){
         require_once(BASE_PHYSICAL_PATH.'/_library/sendgrid-php/vendor/autoload.php');
         $email_send = new \SendGrid\Mail\Mail(); 
-        $email_send->setFrom(SENDGRID_MAIL, "Tangle Coder");
+        $email_send->setFrom(SENDGRID_MAIL, "SRK Online");
         $email_send->setSubject($subject);
-        $email_send->addTo("$email", "Tangle Coder");
+        $email_send->addTo("$email", $name);
         $email_send->addContent("text/plain", "$body");
         $email_send->addContent(
           "text/html", "$body"
@@ -160,6 +164,7 @@
         try {
           $response = $sendgrid->send($email_send);
           if(($response->statusCode() > 199 ) && ($response->statusCode() < 300)){
+            echo $response->statusCode();
             return true;
           }else{
             retResponse($response->statusCode(), "SendGrid Error");
